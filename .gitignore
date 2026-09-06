@@ -7,7 +7,7 @@ dist/
 .env.test.local
 .env.production.local
 .vercel/
-coursera-clone/
+Najaf academy/
 
 .vercel
 .env*
