@@ -1692,29 +1692,6 @@ function HomePage({
         </div>
       </section>
 
-      <section className="stats-strip">
-        <div className="container stats-grid">
-          <div>
-            <strong>500K+</strong>
-            <span>Learners</span>
-          </div>
-
-          <div>
-            <strong>4.8/5</strong>
-            <span>Average rating</span>
-          </div>
-
-          <div>
-            <strong>100+</strong>
-            <span>Learning paths</span>
-          </div>
-
-          <div>
-            <strong>24/7</strong>
-            <span>Self-paced access</span>
-          </div>
-        </div>
-      </section>
 
       <section className="container section">
         <div className="section-heading">
