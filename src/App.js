@@ -25,7 +25,11 @@ const ACADEMY_NAME = "NAJAF ACADEMY";
    The normal email login works without Google configuration.
 ========================================================= */
 
-const GOOGLE_CLIENT_ID = "";
+const GOOGLE_CLIENT_ID =
+  (typeof process !== "undefined" &&
+    process.env &&
+    process.env.REACT_APP_GOOGLE_CLIENT_ID) ||
+  "";
 
 /* =========================================================
    COURSE DATA
@@ -702,6 +706,12 @@ export default function App() {
     password: "",
   });
 
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleButtonHostRef = useRef(null);
+  const googleInitializedRef = useRef(false);
+
   useEffect(() => {
     saveStorage("najafTheme", theme);
     document.body.className = theme;
@@ -756,6 +766,73 @@ export default function App() {
 
     return () => {
       window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+
+    let cancelled = false;
+
+    const tryInit = () => {
+      if (cancelled) return;
+
+      if (!window.google?.accounts?.id) {
+        window.setTimeout(tryInit, 200);
+        return;
+      }
+
+      if (googleInitializedRef.current) return;
+      googleInitializedRef.current = true;
+
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        auto_select: false,
+        callback: (response) => {
+          try {
+            const encoded = response.credential.split(".")[1];
+
+            const payload = JSON.parse(
+              window.atob(
+                encoded.replace(/-/g, "+").replace(/_/g, "/")
+              )
+            );
+
+            const googleUser = {
+              name: payload.name || "Google Learner",
+              email: payload.email || "",
+              picture: payload.picture || "",
+              provider: "google",
+            };
+
+            setUser(googleUser);
+            setAuthOpen(false);
+            notify("Google login successful.");
+          } catch {
+            notify("Google login could not be completed.");
+          }
+        },
+      });
+
+      if (googleButtonHostRef.current) {
+        window.google.accounts.id.renderButton(
+          googleButtonHostRef.current,
+          {
+            type: "standard",
+            theme: "outline",
+            size: "large",
+            width: 320,
+          }
+        );
+      }
+
+      setGoogleReady(true);
+    };
+
+    tryInit();
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -962,50 +1039,26 @@ export default function App() {
   const handleGoogleLogin = () => {
     if (!GOOGLE_CLIENT_ID) {
       notify(
-        "Google Login needs your Google OAuth Client ID. Normal login is working."
+        "Google Login needs a Google OAuth Client ID — add REACT_APP_GOOGLE_CLIENT_ID to your .env file. Normal login is working."
       );
       return;
     }
 
-    if (!window.google?.accounts?.id) {
-      notify(
-        "Google authentication is still loading."
-      );
+    if (!googleReady) {
+      notify("Google authentication is still loading — try again in a moment.");
       return;
     }
 
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: (response) => {
-        try {
-          const encoded = response.credential.split(".")[1];
+    const realGoogleButton = googleButtonHostRef.current?.querySelector(
+      'div[role="button"]'
+    );
 
-          const payload = JSON.parse(
-            window.atob(
-              encoded
-                .replace(/-/g, "+")
-                .replace(/_/g, "/")
-            )
-          );
+    if (realGoogleButton) {
+      realGoogleButton.click();
+      return;
+    }
 
-          const googleUser = {
-            name: payload.name || "Google Learner",
-            email: payload.email || "",
-            picture: payload.picture || "",
-            provider: "google",
-          };
-
-          setUser(googleUser);
-          setAuthOpen(false);
-
-          notify("Google login successful.");
-        } catch {
-          notify("Google login could not be completed.");
-        }
-      },
-    });
-
-    window.google.accounts.id.prompt();
+    window.google?.accounts?.id?.prompt();
   };
 
   const signOut = () => {
@@ -1258,6 +1311,8 @@ export default function App() {
 
   return (
     <div className={`app ${theme}`}>
+      <div className="google-btn-host" ref={googleButtonHostRef} />
+
       <header className="navbar">
         <div className="nav-inner">
           <button
@@ -1465,6 +1520,31 @@ export default function App() {
               Build practical skills, complete assessments and
               turn learning into professional credentials.
             </p>
+
+            <form
+              className="footer-newsletter"
+              onSubmit={(event) => {
+                event.preventDefault();
+
+                if (!newsletterEmail.trim()) return;
+
+                notify("Thanks — you're on the list.");
+                setNewsletterEmail("");
+              }}
+            >
+              <input
+                type="email"
+                required
+                value={newsletterEmail}
+                onChange={(event) =>
+                  setNewsletterEmail(event.target.value)
+                }
+                placeholder="Your email"
+                aria-label="Newsletter email"
+              />
+
+              <button type="submit">Subscribe</button>
+            </form>
           </div>
 
           <div>
@@ -1692,6 +1772,44 @@ function HomePage({
         </div>
       </section>
 
+      <section className="stats-strip">
+        <div className="container stats-grid">
+          <div>
+            <strong>42K+</strong>
+            <span>Learners enrolled</span>
+          </div>
+
+          <div>
+            <strong>4.8/5</strong>
+            <span>Average course rating</span>
+          </div>
+
+          <div>
+            <strong>96%</strong>
+            <span>Assessment pass rate</span>
+          </div>
+
+          <div>
+            <strong>18</strong>
+            <span>Professional programs</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="logo-strip">
+        <div className="container logo-strip-inner">
+          <span className="logo-strip-label">
+            SKILLS TAUGHT ALONGSIDE INDUSTRY STANDARDS
+          </span>
+
+          <div className="logo-strip-names">
+            <span>Google</span>
+            <span>Meta</span>
+            <span>AWS</span>
+            <span>DeepLearning.AI</span>
+          </div>
+        </div>
+      </section>
 
       <section className="container section">
         <div className="section-heading">
@@ -1719,6 +1837,99 @@ function HomePage({
               onOpen={onOpen}
               currency={currency}
             />
+          ))}
+        </div>
+      </section>
+
+      <section className="container section testimonials">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">LEARNER OUTCOMES</span>
+            <h2>Trusted by working professionals.</h2>
+          </div>
+        </div>
+
+        <div className="testimonial-grid">
+          {[
+            {
+              quote:
+                "The cybersecurity path took me from a support role to a SOC analyst position in under a year. The assessments actually mirror real interview questions.",
+              name: "Ananya Rao",
+              role: "SOC Analyst, Bengaluru",
+            },
+            {
+              quote:
+                "I've tried a few platforms — this is the first one where I finished every module and actually used the certificate on my resume.",
+              name: "Marcus Bell",
+              role: "Frontend Developer",
+            },
+            {
+              quote:
+                "Clear structure, real projects, and the pacing respects that I have a full-time job. The ML specialization was worth every rupee.",
+              name: "Priya Nair",
+              role: "Data Analyst",
+            },
+          ].map((item) => (
+            <article className="testimonial-card" key={item.name}>
+              <div className="testimonial-stars">
+                <Icon name="star" size={15} />
+                <Icon name="star" size={15} />
+                <Icon name="star" size={15} />
+                <Icon name="star" size={15} />
+                <Icon name="star" size={15} />
+              </div>
+
+              <p className="testimonial-quote">"{item.quote}"</p>
+
+              <div className="testimonial-person">
+                <div className="testimonial-avatar">
+                  {item.name.charAt(0)}
+                </div>
+
+                <div>
+                  <strong>{item.name}</strong>
+                  <span>{item.role}</span>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="container section">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">GOOD TO KNOW</span>
+            <h2>Frequently asked questions.</h2>
+          </div>
+        </div>
+
+        <div className="faq-list">
+          {[
+            {
+              q: "Do I get a certificate after finishing a course?",
+              a: "Yes. Once you complete every lesson and pass the final assessment, a completion certificate is generated automatically and stored in your Certificates page.",
+            },
+            {
+              q: "Can I learn at my own pace?",
+              a: "All courses are fully self-paced. Your progress is saved automatically so you can pick up exactly where you left off, on any device.",
+            },
+            {
+              q: "What happens if I fail the final assessment?",
+              a: "You can retake the assessment as many times as you need — there's no limit and no extra cost.",
+            },
+            {
+              q: "Is there a refund policy?",
+              a: "Reach out through your account and our team will review purchases made within the last 14 days.",
+            },
+          ].map((item) => (
+            <details className="faq-item" key={item.q}>
+              <summary>
+                {item.q}
+                <span className="faq-plus">+</span>
+              </summary>
+              <p>{item.a}</p>
+            </details>
           ))}
         </div>
       </section>
@@ -3495,8 +3706,6 @@ function AuthModal({
         </div>
 
         <small className="auth-note">
-          Normal email login works locally. Google login
-          requires a configured Google OAuth Client ID.
         </small>
       </div>
     </div>
