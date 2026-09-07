@@ -1772,45 +1772,7 @@ function HomePage({
         </div>
       </section>
 
-      <section className="stats-strip">
-        <div className="container stats-grid">
-          <div>
-            <strong>42K+</strong>
-            <span>Learners enrolled</span>
-          </div>
-
-          <div>
-            <strong>4.8/5</strong>
-            <span>Average course rating</span>
-          </div>
-
-          <div>
-            <strong>96%</strong>
-            <span>Assessment pass rate</span>
-          </div>
-
-          <div>
-            <strong>18</strong>
-            <span>Professional programs</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="logo-strip">
-        <div className="container logo-strip-inner">
-          <span className="logo-strip-label">
-            SKILLS TAUGHT ALONGSIDE INDUSTRY STANDARDS
-          </span>
-
-          <div className="logo-strip-names">
-            <span>Google</span>
-            <span>Meta</span>
-            <span>AWS</span>
-            <span>DeepLearning.AI</span>
-          </div>
-        </div>
-      </section>
-
+    
       <section className="container section">
         <div className="section-heading">
           <div>
